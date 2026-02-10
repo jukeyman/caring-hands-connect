@@ -1,19 +1,43 @@
-import base44 from "@base44/vite-plugin"
+import pages from "@hono/vite-cloudflare-pages"
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
+import path from 'path'
 
-// https://vite.dev/config/
-export default defineConfig({
-  logLevel: 'error', // Suppress warnings, only show errors
-  plugins: [
-    base44({
-      // Support for legacy code that imports the base44 SDK with @/integrations, @/entities, etc.
-      // can be removed if the code has been updated to use the new SDK imports from @base44/sdk
-      legacySDKImports: process.env.BASE44_LEGACY_SDK_IMPORTS === 'true',
-      hmrNotifier: true,
-      navigationNotifier: true,
-      visualEditAgent: true
-    }),
-    react(),
-  ]
-});
+export default defineConfig(({ mode }) => {
+  if (mode === 'client') {
+    // Client-side React SPA build
+    return {
+      plugins: [react()],
+      resolve: {
+        alias: {
+          '@': path.resolve(__dirname, './src'),
+        },
+      },
+      build: {
+        outDir: 'dist',
+        emptyOutDir: false,
+        rollupOptions: {
+          input: './index.html',
+        },
+      },
+    }
+  }
+
+  // Server-side Hono API build (default)
+  return {
+    plugins: [
+      pages({
+        entry: './src/index.tsx',
+      }),
+    ],
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, './src'),
+      },
+    },
+    build: {
+      outDir: 'dist',
+      emptyOutDir: true,
+    },
+  }
+})
